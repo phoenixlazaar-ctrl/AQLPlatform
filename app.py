@@ -6,6 +6,9 @@ import webbrowser
 import threading
 import time
 
+# Import the actual FastAPI app
+from api.server import app
+
 if hasattr(sys.stdout, 'reconfigure'):
     try:
         sys.stdout.reconfigure(encoding='utf-8', errors='replace')
@@ -53,4 +56,4 @@ if __name__ == "__main__":
     if not is_cloud:
         threading.Thread(target=open_browser_delayed, args=(url,), daemon=True).start()
 
-    uvicorn.run("api.server:app", host=host, port=port, reload=False, log_level="info")
+    uvicorn.run(app, host=host, port=port, reload=False, log_level="info")

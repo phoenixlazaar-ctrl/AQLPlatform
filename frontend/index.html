@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html class="light" lang="en" dir="ltr">
+<head>
+    <meta charset="utf-8"/>
+    <meta name="author" content="LinguaVerita Company"/>
+    <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+    <title>AQL — Adaptive Quran Learning</title>
+    
+    <!-- Tailwind CSS with CDN plugins -->
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    
+    <!-- Google Fonts & Material Symbols Icons -->
+    <link rel="preconnect" href="https://fonts.googleapis.com"/>
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin=""/>
+    <link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;600;700;800&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&family=Amiri:ital,wght@0,400;0,700;1,400&family=Scheherazade+New:wght@400;700&display=swap" rel="stylesheet"/>
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+
+    <style>
+        @font-face {
+            font-family: 'Traditional Arabic';
+            src: local('Traditional Arabic'), local('Scheherazade New'), local('Amiri');
+        }
+        
+        .font-quran-display {
+            font-family: 'Traditional Arabic', 'Scheherazade New', 'Amiri', serif;
+        }
+
+        /* Color Coding based on Exact Stability Tokens */
+        .status-retained { background-color: #006875 !important; color: #ffffff !important; }
+        .status-consolidation { background-color: #549ba6 !important; color: #ffffff !important; }
+        .status-review { background-color: #f3bf26 !important; color: #251a00 !important; }
+        .status-danger { background-color: #ba1a1a !important; color: #ffffff !important; }
+
+        /* Custom Heatmap Grid */
+        .heatmap-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(28px, 1fr));
+            gap: 5px;
+        }
+        
+        .ayah-cell {
+            aspect-ratio: 1;
+            border-radius: 3px;
+            transition: all 0.2s ease;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 11px;
+            font-family: 'JetBrains Mono', monospace;
+            font-weight: 700;
+        }
+        
+        .ayah-cell:hover {
+            transform: scale(1.25);
+            z-index: 20;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+        }
+
+        /* Glassmorphic Dark Panel Overlay for Ayah Inspector */
+        .glass-panel-dark {
+            background: #2b3233;
+            border: 1px solid rgba(186, 201, 204, 0.15);
+        }
+
+        .gauge-circle {
+            stroke-dasharray: 283;
+            stroke-dashoffset: 283;
+            transition: stroke-dashoffset 1.2s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .view-panel {
+            display: none;
+        }
+        .view-panel.active {
+            display: block;
+        }
+
+        /* LTR Alignment adjustments */
+        body.ltr-mode {
+            direction: ltr;
+        }
+        body.ltr-mode #sideNavBar {
+            left: 0;
+            right: auto;
+            border-right: 1px solid rgba(186, 201, 204, 0.3);
+            border-left: none;
+        }
+        body.ltr-mode main {
+            margin-left: 280px;
+            margin-right: 0;
+        }
+        @media (max-width: 1024px) {
+            body.ltr-mode main, main {
+                margin-left: 0 !important;
+                margin-right: 0 !important;
+            }
+        }
+    </style>
+
+    <script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "surface-container-low": "#eef5f7",
+                        "surface-container-highest": "#dde4e6",
+                        "inverse-surface": "#2b3233",
+                        "inverse-primary": "#00daf3",
+                        "on-error": "#ffffff",
+                        "on-tertiary-fixed-variant": "#594400",
+                        "on-error-container": "#93000a",
+                        "on-primary-container": "#00626e",
+                        "error-container": "#ffdad6",
+                        "on-secondary-fixed-variant": "#0d4e57",
+                        "tertiary-container": "#fec931",
+                        "primary-container": "#0de5ff",
+                        "secondary-fixed-dim": "#98d0da",
+                        "surface-container": "#e8eff1",
+                        "secondary-container": "#b1e9f4",
+                        "primary": "#006875",
+                        "tertiary": "#765a00",
+                        "on-primary-fixed": "#001f24",
+                        "surface-variant": "#dde4e6",
+                        "on-tertiary": "#ffffff",
+                        "surface-container-high": "#e3e9eb",
+                        "on-surface": "#161d1e",
+                        "on-tertiary-fixed": "#251a00",
+                        "on-primary": "#ffffff",
+                        "surface": "#f4fafd",
+                        "tertiary-fixed-dim": "#f3bf26",
+                        "primary-fixed-dim": "#00daf3",
+                        "on-surface-variant": "#3b494c",
+                        "on-secondary": "#ffffff",
+                        "on-background": "#161d1e",
+                        "error": "#ba1a1a",
+                        "primary-fixed": "#9cefff",
+                        "surface-tint": "#006875",
+                        "outline": "#6b7a7d",
+                        "surface-dim": "#d4dbdd",
+                        "secondary-fixed": "#b4ecf7",
+                        "secondary": "#2d6670",
+                        "background": "#f4fafd",
+                        "on-secondary-fixed": "#001f24",
+                        "surface-container-lowest": "#ffffff",
+                        "on-primary-fixed-variant": "#004f58",
+                        "on-secondary-container": "#326a74",
+                        "on-tertiary-container": "#6f5500",
+                        "outline-variant": "#bac9cc",
+                        "inverse-on-surface": "#ebf2f4",
+                        "tertiary-fixed": "#ffdf96",
+                        "surface-bright": "#f4fafd"
+                    },
+                    borderRadius: {
+                        "DEFAULT": "0.125rem",
+                        "lg": "0.375rem",
+                        "xl": "0.75rem",
+                        "2xl": "1rem",
+                        "full": "9999px"
+                    },
+                    fontFamily: {
+                        "metadata": ["Inter", "sans-serif"],
+                        "stat-value": ["Hanken Grotesk", "sans-serif"],
+                        "display-lg": ["Hanken Grotesk", "sans-serif"],
+                        "label-caps": ["JetBrains Mono", "monospace"],
+                        "headline-md": ["Hanken Grotesk", "sans-serif"],
+                        "quran-display": ["Traditional Arabic", "Scheherazade New", "Amiri", "serif"],
+                        "body-base": ["Inter", "sans-serif"]
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-background text-on-background font-body-base min-h-screen flex antialiased">
+
+<!-- SideNavBar (Light theme matching screenshot) -->
+<nav id="sideNavBar" class="hidden md:flex flex-col h-screen w-[280px] bg-surface-container-low border-r border-outline-variant/20 fixed top-0 left-0 z-40 p-4 shrink-0">
+    <!-- Brand Header with AQL Adaptive Quran Learning -->
+    <div class="mb-6 px-2 flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl bg-[#00daf3]/20 border-2 border-[#00daf3] flex-shrink-0 flex items-center justify-center font-bold text-[#006875] text-sm shadow-sm font-label-caps">
+            AQL
+        </div>
+        <div class="min-w-0">
+            <h1 class="font-headline-md text-base font-bold text-[#006875] truncate leading-tight">AQL</h1>
+            <p class="font-metadata text-[11px] text-on-surface-variant font-medium truncate">Adaptive Quran Learning</p>
+        </div>
+    </div>
+
+    <!-- New Session CTA Button -->
+    <div class="px-2 mb-6">
+        <button onclick="generateTodaySession()" id="btnNewSession" class="w-full py-2.5 px-4 bg-primary text-on-primary rounded-xl font-metadata text-xs flex items-center justify-center hover:bg-on-primary-fixed-variant transition-colors shadow-sm font-bold tracking-wide">
+            <span>New Session</span>
+        </button>
+    </div>
+
+    <!-- Navigation Links -->
+    <div class="flex-1 flex flex-col space-y-1.5 px-2 overflow-y-auto">
+        <button class="nav-tab-btn flex items-center space-x-3 rtl:space-x-reverse px-3 py-2.5 rounded-xl font-label-caps text-xs text-on-surface-variant hover:bg-surface-container-highest transition-all duration-200" data-view="student-view">
+            <span class="material-symbols-outlined" style="font-size: 20px;">dashboard</span>
+            <span>🎓 Today's Adaptive Session</span>
+        </button>
+        <button class="nav-tab-btn flex items-center space-x-3 rtl:space-x-reverse px-3 py-2.5 rounded-xl font-label-caps text-xs text-on-surface-variant hover:bg-surface-container-highest transition-all duration-200" data-view="memory-view">
+            <span class="material-symbols-outlined" style="font-size: 20px;">grid_view</span>
+            <span>🧠 Ayah Memory Heatmap</span>
+        </button>
+        <button class="nav-tab-btn flex items-center space-x-3 rtl:space-x-reverse px-3 py-2.5 bg-primary-container text-on-primary-container rounded-xl font-label-caps text-xs transition-all duration-200 shadow-sm active font-bold" data-view="audio-view">
+            <span class="material-symbols-outlined" style="font-size: 20px; font-variation-settings: 'FILL' 1;">mic</span>
+            <span>🎙️ Audio Recitation & Diagnostics</span>
+        </button>
+        <button class="nav-tab-btn flex items-center space-x-3 rtl:space-x-reverse px-3 py-2.5 rounded-xl font-label-caps text-xs text-on-surface-variant hover:bg-surface-container-highest transition-all duration-200" data-view="teacher-view">
+            <span class="material-symbols-outlined" style="font-size: 20px;">medical_services</span>
+            <span>👨‍🏫 Teacher Triage & Case Board</span>
+        </button>
+        <button class="nav-tab-btn flex items-center space-x-3 rtl:space-x-reverse px-3 py-2.5 rounded-xl font-label-caps text-xs text-on-surface-variant hover:bg-surface-container-highest transition-all duration-200" data-view="parent-view">
+            <span class="material-symbols-outlined" style="font-size: 20px;">query_stats</span>
+            <span>👨‍👩‍👧 Parent Portal & Analytics</span>
+        </button>
+        <button class="nav-tab-btn flex items-center space-x-3 rtl:space-x-reverse px-3 py-2.5 rounded-xl font-label-caps text-xs text-on-surface-variant hover:bg-surface-container-highest transition-all duration-200" data-view="sandbox-view">
+            <span class="material-symbols-outlined" style="font-size: 20px;">science</span>
+            <span>⚙️ Timeline & Policy Simulator</span>
+        </button>
+    </div>
+
+    <!-- Footer Controls -->
+    <div class="mt-auto px-2 pt-4 pb-2 border-t border-outline-variant/20 flex flex-col space-y-3">
+        <div>
+            <label class="block font-label-caps text-[10px] text-on-surface-variant mb-1">LEARNER PROFILE:</label>
+            <select id="archetypeSelect" class="w-full bg-surface-container border border-outline-variant/30 rounded-lg p-2 font-metadata text-xs text-on-surface focus:border-primary outline-none">
+                <option value="student_tariq">Tariq Al-Mansouri (Mutashabihat Confusion)</option>
+                <option value="student_maryam">Maryam (High Stability & Retention)</option>
+                <option value="student_zaid">Zaid (Critical Memory Decay)</option>
+            </select>
+        </div>
+        <div class="flex items-center justify-between bg-surface-container p-2 rounded-lg border border-outline-variant/20">
+            <span class="text-sm">🌐</span>
+            <select id="langSelect" class="bg-transparent border-none text-xs font-bold font-metadata text-primary outline-none cursor-default">
+                <option value="en" selected>🇬🇧 English</option>
+            </select>
+        </div>
+        <div class="pt-2 border-t border-outline-variant/20 text-[10px] text-on-surface-variant font-metadata leading-tight">
+            <div class="flex items-center gap-1.5 font-bold text-primary mb-1">
+                <span class="material-symbols-outlined" style="font-size: 14px;">verified</span>
+                <span>Developed by LinguaVerita Company</span>
+            </div>
+            <a href="mailto:LinguaVeritas2026@gmail.com" class="flex items-center gap-1.5 text-on-surface-variant hover:text-primary transition-colors text-[10.5px]">
+                <span class="material-symbols-outlined" style="font-size: 13px;">mail</span>
+                <span class="truncate">Contact: LinguaVeritas2026@gmail.com</span>
+            </a>
+        </div>
+    </div>
+</nav>
+
+<!-- Main Content Area -->
+<main class="flex-1 md:ml-[280px] min-h-screen flex flex-col relative pb-20 md:pb-0 bg-background">
+    <!-- TopAppBar -->
+    <header class="w-full px-8 h-20 bg-surface-container-lowest/95 backdrop-blur-xl border-b border-outline-variant/10 shadow-sm sticky top-0 z-30 flex justify-between items-center">
+        <div class="flex items-center space-x-4 rtl:space-x-reverse">
+            <h2 id="topBarTitle" class="font-headline-md text-xl md:text-2xl text-on-surface font-bold tracking-tight">
+                Audio & Diagnostic Studio
+            </h2>
+        </div>
+        <div class="flex items-center space-x-4 rtl:space-x-reverse">
+            <span id="studentNameBadge" class="inline-flex items-center px-3 py-1 rounded-md bg-secondary-container/40 text-on-secondary-container text-xs font-bold font-metadata">
+                Tariq Al-Mansouri
+            </span>
+            <span id="simDayBadge" class="inline-flex items-center px-3 py-1 rounded-md bg-surface-container-high text-on-surface-variant text-xs font-label-caps">
+                Day #14
+            </span>
+            <button class="p-2 text-on-surface-variant hover:text-primary transition-colors rounded-full hover:bg-surface-container-high" title="Notifications">
+                <span class="material-symbols-outlined">notifications</span>
+            </button>
+            <div class="w-9 h-9 rounded-full bg-surface-variant border border-outline-variant overflow-hidden flex items-center justify-center font-bold text-xs text-primary">
+                🎓
+            </div>
+        </div>
+    </header>
+
+    <div class="p-4 md:p-8 max-w-[1440px] w-full mx-auto">
+        <!-- Audio View (Active by default) -->
+        <section id="audio-view" class="view-panel active space-y-6">
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+                <div class="lg:col-span-5 flex flex-col space-y-6">
+                    <div class="bg-surface-container-lowest rounded-xl border border-outline-variant/20 p-5 shadow-sm">
+                        <div class="flex items-center justify-between mb-4 border-b border-outline-variant/10 pb-3">
+                            <h3 class="font-metadata text-xs text-on-surface-variant flex items-center uppercase tracking-wider font-bold">
+                                <span class="material-symbols-outlined mr-2 text-primary" style="font-size: 18px;">my_location</span>
+                                <span>Target Coordinate</span>
+                            </h3>
+                        </div>
+                        <div class="space-y-3">
+                            <label class="block font-label-caps text-xs text-on-surface-variant"><span>Select Ayah for Evaluation:</span></label>
+                            <select id="audioAyahSelect" class="w-full bg-surface-container-low border border-outline-variant/30 rounded-lg p-2.5 font-body-base text-xs text-on-surface focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all"></select>
+                        </div>
+                        <div class="mt-4 bg-surface-container-low p-4 rounded-lg border border-outline-variant/20 text-center">
+                            <div id="targetAyahUthmani" class="font-quran-display text-[32px] text-on-surface leading-loose" dir="rtl">
+                                الَّذِي خَلَقَ سَبْعَ سَمَاوَاتٍ طِبَاقًا
+                            </div>
+                            <p class="font-metadata text-xs text-on-surface-variant mt-2"><span>Canonical Quranic Text (Uthmani Script)</span></p>
+                        </div>
+                    </div>
+                </div>
+                <div class="lg:col-span-7 flex flex-col space-y-6">
+                    <div class="bg-surface-container-lowest rounded-xl border border-error-container p-5 shadow-sm relative overflow-hidden">
+                        <div class="absolute inset-0 bg-error/5 pointer-events-none"></div>
+                        <div class="relative z-10 flex flex-col md:flex-row md:items-start justify-between gap-4">
+                            <div class="flex-1">
+                                <div class="flex items-center space-x-2 mb-2">
+                                    <span class="material-symbols-outlined text-error">warning</span>
+                                    <h3 class="font-headline-md text-[20px] font-bold text-on-surface">Engine Diagnosis & Root-Cause Attribution:</h3>
+                                </div>
+                                <p id="diagCauseText" class="font-body-base text-xs text-on-surface-variant mb-4 leading-relaxed">
+                                    The engine detected a phonetic substitution that alters the grammatical case of the target word.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Student View -->
+        <section id="student-view" class="view-panel space-y-6">
+            <header class="mb-6">
+                <h2 class="font-display-lg text-3xl font-extrabold text-primary">🎓 Today's Adaptive Session</h2>
+            </header>
+            <div class="bg-surface-container-lowest rounded-xl border border-outline-variant/20 p-6 shadow-sm text-center">
+                <p class="text-on-surface-variant">Analyzing learning metrics...</p>
+            </div>
+        </section>
+
+        <!-- Memory View -->
+        <section id="memory-view" class="view-panel space-y-6">
+            <h2 class="font-headline-md text-2xl font-bold text-on-surface">🧠 Ayah Memory Heatmap</h2>
+            <div class="bg-surface-container-lowest rounded-xl border border-outline-variant/20 p-6 shadow-sm text-center">
+                <p class="text-on-surface-variant">Memory heatmap loading...</p>
+            </div>
+        </section>
+
+        <!-- Teacher View -->
+        <section id="teacher-view" class="view-panel space-y-6">
+            <h2 class="font-display-lg text-2xl font-bold text-primary">👨‍🏫 Teacher Triage & Case Board</h2>
+            <div class="bg-surface-container-lowest rounded-xl border border-outline-variant/20 p-6 shadow-sm text-center">
+                <p class="text-on-surface-variant">Triage cases by memory stability...</p>
+            </div>
+        </section>
+
+        <!-- Parent View -->
+        <section id="parent-view" class="view-panel space-y-6">
+            <h2 class="font-display-lg text-2xl font-bold text-primary">👨‍👩‍👧 Parent Portal & Analytics</h2>
+            <div class="bg-surface-container-lowest rounded-xl border border-outline-variant/20 p-6 shadow-sm text-center">
+                <p class="text-on-surface-variant">Progress analytics...</p>
+            </div>
+        </section>
+
+        <!-- Sandbox View -->
+        <section id="sandbox-view" class="view-panel space-y-6">
+            <h2 class="font-display-lg text-2xl font-bold text-primary">⚙️ Timeline & Policy Simulator</h2>
+            <div class="bg-surface-container-lowest rounded-xl border border-outline-variant/20 p-6 shadow-sm text-center">
+                <p class="text-on-surface-variant">Timeline simulator...</p>
+            </div>
+        </section>
+    </div>
+
+    <!-- Footer -->
+    <footer class="w-full py-4 px-6 md:px-8 border-t border-outline-variant/10 bg-surface-container-lowest/80 text-xs font-metadata text-on-surface-variant flex flex-col sm:flex-row items-center justify-between gap-3 mt-12">
+        <div class="flex items-center gap-2">
+            <span class="font-bold text-primary">AQL Platform</span>
+            <span class="opacity-40">•</span>
+            <span>Developed by <strong class="text-on-surface font-bold">LinguaVerita Company</strong></span>
+        </div>
+        <div class="flex items-center gap-1.5">
+            <span class="material-symbols-outlined text-primary" style="font-size: 16px;">mail</span>
+            <a href="mailto:LinguaVeritas2026@gmail.com" class="text-primary hover:underline font-bold">LinguaVeritas2026@gmail.com</a>
+        </div>
+    </footer>
+</main>
+
+<!-- Scripts -->
+<script src="js/app.js"></script>
+
+</body>
+</html>

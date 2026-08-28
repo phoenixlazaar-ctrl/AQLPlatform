@@ -1,0 +1,80 @@
+/* AQL Platform - Supplementary Styles */
+/* Main styles are in Tailwind CSS via CDN */
+
+/* Custom scrollbar styling */
+::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: #f4fafd;
+}
+
+::-webkit-scrollbar-thumb {
+    background: #dde4e6;
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: #bac9cc;
+}
+
+/* Smooth transitions */
+* {
+    transition-property: color, background-color, border-color, box-shadow, opacity;
+    transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+    transition-duration: 150ms;
+}
+
+/* Remove transition delays for view switching */
+.view-panel {
+    animation: fadeIn 0.2s ease-in-out;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
+    }
+}
+
+/* Print styles */
+@media print {
+    nav, header, footer {
+        display: none;
+    }
+    main {
+        margin-left: 0;
+    }
+}
+
+/* Accessibility improvements */
+focus-visible {
+    outline: 2px solid #006875;
+    outline-offset: 2px;
+}
+
+button:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+    outline: 2px solid #006875;
+    outline-offset: 2px;
+}
+
+/* Animation for loading states */
+@keyframes pulse-glow {
+    0%, 100% {
+        opacity: 1;
+    }
+    50% {
+        opacity: 0.5;
+    }
+}
+
+.animate-pulse-glow {
+    animation: pulse-glow 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}

@@ -4,10 +4,11 @@ Adaptive Quran Learning Platform - API endpoints and dashboard integration
 """
 from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse, HTMLResponse
+from fastapi.responses import JSONResponse, FileResponse
 from fastapi.staticfiles import StaticFiles
 import os
 import sys
+from pathlib import Path
 from typing import Optional
 
 from api.models import (
@@ -35,6 +36,16 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# ============================================================================
+# STATIC FILES & FRONTEND
+# ============================================================================
+
+# Mount frontend static files (CSS, JS, etc.)
+frontend_path = Path(__file__).parent.parent / "frontend"
+if frontend_path.exists():
+    # Mount static files from frontend directory
+    app.mount("/static", StaticFiles(directory=str(frontend_path)), name="static")
 
 # ============================================================================
 # HEALTH & STATUS ENDPOINTS
@@ -77,7 +88,7 @@ async def status():
 # STUDENT ENDPOINTS
 # ============================================================================
 
-@app.get("/students/{student_id}/metrics", response_model=StudentMetrics, tags=["Students"])
+@app.get("/api/students/{student_id}/metrics", response_model=StudentMetrics, tags=["Students"])
 async def get_student_metrics(student_id: str):
     """
     Get learning metrics for a specific student
@@ -90,10 +101,10 @@ async def get_student_metrics(student_id: str):
     # TODO: Fetch from database
     return StudentMetrics(
         student_id=student_id,
-        total_verses_learned=0,
-        retention_rate=0.0,
-        consistency_score=0.0,
-        ars_score=0.0
+        total_verses_learned=45,
+        retention_rate=78.5,
+        consistency_score=82.0,
+        ars_score=68.5
     )
 
 
@@ -101,7 +112,7 @@ async def get_student_metrics(student_id: str):
 # SESSION ENDPOINTS
 # ============================================================================
 
-@app.post("/sessions/generate", response_model=LearningSession, tags=["Sessions"])
+@app.post("/api/sessions/generate", response_model=LearningSession, tags=["Sessions"])
 async def generate_adaptive_session(student_id: str = Query(..., description="Student ID")):
     """
     Generate an adaptive learning session for a student
@@ -118,13 +129,14 @@ async def generate_adaptive_session(student_id: str = Query(..., description="St
     return LearningSession(
         session_id="session_001",
         session_type=SessionType.BALANCED,
-        new_verses=1,
+        new_verses=2,
         revision_percentage=50,
-        duration_minutes=30
+        duration_minutes=30,
+        focus_verses=["2:255", "67:1"]
     )
 
 
-@app.get("/sessions/{session_id}", response_model=LearningSession, tags=["Sessions"])
+@app.get("/api/sessions/{session_id}", response_model=LearningSession, tags=["Sessions"])
 async def get_session(session_id: str):
     """
     Retrieve details of a specific learning session
@@ -140,7 +152,7 @@ async def get_session(session_id: str):
 # LEARNING ENDPOINTS
 # ============================================================================
 
-@app.post("/verses/recall", tags=["Learning"])
+@app.post("/api/verses/recall", tags=["Learning"])
 async def record_verse_recall(
     student_id: str = Query(...),
     verse_id: str = Query(...),
@@ -159,7 +171,7 @@ async def record_verse_recall(
     }
 
 
-@app.get("/verses/similar/{verse_id}", tags=["Learning"])
+@app.get("/api/verses/similar/{verse_id}", tags=["Learning"])
 async def get_confusion_set(verse_id: str):
     """
     Get verses similar to the given verse
@@ -167,70 +179,32 @@ async def get_confusion_set(verse_id: str):
     """
     return {
         "target_verse": verse_id,
-        "similar_verses": [],
+        "similar_verses": ["2:254", "2:256"],
         "confusion_pattern": "phonetic_similarity"
     }
 
 
 # ============================================================================
-# DASHBOARD & STATIC CONTENT
+# DASHBOARD & FRONTEND ROUTING
 # ============================================================================
 
-@app.get("/", response_class=HTMLResponse, tags=["Dashboard"])
-async def root():
+@app.get("/", tags=["Frontend"])
+async def serve_index():
     """
-    Root endpoint - returns dashboard or API information
+    Serve the main dashboard HTML file
     """
-    frontend_path = os.path.join(os.path.dirname(__file__), "..", "frontend")
-    index_path = os.path.join(frontend_path, "index.html")
+    index_path = Path(__file__).parent.parent / "frontend" / "index.html"
     
-    if os.path.exists(index_path):
-        with open(index_path, "r", encoding="utf-8") as f:
-            return f.read()
+    if index_path.exists():
+        return FileResponse(index_path, media_type="text/html")
     
-    return """
-    <!DOCTYPE html>
-    <html>
-    <head>
-        <title>AQL Platform API</title>
-        <style>
-            body { font-family: Arial, sans-serif; margin: 40px; }
-            h1 { color: #1a7d1a; }
-            .endpoint { margin: 20px 0; padding: 10px; border-left: 4px solid #1a7d1a; }
-        </style>
-    </head>
-    <body>
-        <h1>🕌 AQL - Adaptive Quran Learning Platform</h1>
-        <p>API Server is running successfully!</p>
-        
-        <h2>Available Endpoints:</h2>
-        <div class="endpoint">
-            <strong>GET /health</strong> - Health check
-        </div>
-        <div class="endpoint">
-            <strong>GET /docs</strong> - Interactive API documentation (Swagger UI)
-        </div>
-        <div class="endpoint">
-            <strong>GET /redoc</strong> - Alternative API documentation (ReDoc)
-        </div>
-        
-        <h2>Quick Start:</h2>
-        <ul>
-            <li><a href="/docs">📚 View API Documentation</a></li>
-            <li><a href="/health">🏥 Check Service Health</a></li>
-        </ul>
-    </body>
-    </html>
-    """
-
-
-# Mount frontend static files if they exist
-frontend_static_path = os.path.join(os.path.dirname(__file__), "..", "frontend")
-if os.path.exists(frontend_static_path):
-    try:
-        app.mount("/static", StaticFiles(directory=frontend_static_path), name="static")
-    except Exception as e:
-        print(f"Warning: Could not mount frontend static files: {e}")
+    # Fallback if frontend doesn't exist
+    return {
+        "message": "AQL Platform API",
+        "status": "running",
+        "documentation": "/docs",
+        "health": "/health"
+    }
 
 
 # ============================================================================
@@ -252,6 +226,7 @@ async def http_exception_handler(request, exc):
 @app.exception_handler(Exception)
 async def general_exception_handler(request, exc):
     """General exception handler for uncaught errors"""
+    print(f"Unhandled exception: {exc}")
     return JSONResponse(
         status_code=500,
         content=ErrorResponse(
@@ -270,6 +245,8 @@ async def startup_event():
     """Initialize resources on server startup"""
     print("=" * 70)
     print("AQL Platform API Server Starting...")
+    frontend_exists = (Path(__file__).parent.parent / "frontend").exists()
+    print(f"Frontend available: {frontend_exists}")
     print("=" * 70)
 
 
